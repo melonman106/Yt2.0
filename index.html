@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YouTube</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+ <link rel="icon" href="https://f.playcode.io/p-2672631/v-1/019cb62e-a21a-716c-a040-5dbff76aea0f/youtube.png" type="image/png">
+ <link rel="icon" href="./assets/YouTube.png" type="image/png">
+<style>
+/* ==============================================================
+   THEME VARIABLES – Light (default) & Dark (when .dark-mode on <body>)
+   ============================================================== */
+:root{
+  --primary:#3f51b5;               /* Indigo */
+  --bg:#f9f9f9;                    /* Light page background */
+  --text:#222;                     /* Light main text */
+  --muted:#6b6b6b;                 /* Light metadata */
+  --card:#fff;                     /* Light card bg */
+  --border:#e5e5e5;                /* Light border */
+  --header:#fff;                   /* Light header bg */
+  --sidebar:#fff;                  /* Light sidebar bg */
+  --yt-red:#ff0000;                /* YouTube red */
+  --modal-bg:#111;                 /* Dark modal bg (same for both) */
+  --shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Dark mode overrides – applied when <body class="dark-mode"> */
+body.dark-mode{
+  --bg:#202020;
+  --text:#eaeaea;
+  --muted:#b0b0b0;
+  --card:#2b2b2b;
+  --border:#444;
+  --header:#1f1f1f;
+  --sidebar:#1f1f1f;
+}
+
+/* --------------------------------------------------------------
+   GLOBAL RESET & BASE
+   -------------------------------------------------------------- */
+*{box-sizing:border-box}
+body{
+  margin:0;padding:0;
+  font-family:'Roboto','Arial',sans-serif;
+  background:var(--bg);color:var(--text);
+  transition:background .3s,color .3s;
+}
+a{color:inherit;text-decoration:none}
+a:hover{color:var(--primary)}
+ul{margin:0;padding:0;list-style:none}
+
+/* --------------------------------------------------------------
+   HEADER
+   -------------------------------------------------------------- */
+.header{
+  position:sticky;top:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  height:64px;padding:12px 24px;
+  background:var(--header);border-bottom:1px solid var(--border);
+  box-shadow:var(--shadow);
+}
+.logo{
+  display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;
+}
+.logo .yt-brand{color:var(--yt-red);font-size:28px;font-weight:700}
+.logo .brand{font-size:20px}
+
+/* Search bar */
+.search{
+  display:flex;align-items:center;gap:6px;
+  width:40%;min-width:260px;max-width:540px;
+}
+.search input{
+  flex:1;padding:10px 16px;border:1px solid var(--border);
+  border-radius:24px 0 0 24px;outline:none;background:#fff;
+}
+.search input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(63,81,181,.2)}
+.search button{
+  width:44px;height:44px;border:1px solid var(--border);
+  border-left:none;border-radius:0 24px 24px 0;
+  background:#f0f0f0;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;transition:background .2s;
+}
+.search button:hover{background:#e0e0e0}
+.search button svg{width:18px;height:18px;fill:#555}
+
+/* Header actions – includes dark‑mode toggle */
+.header-actions{
+  display:flex;gap:24px;align-items:center;
+  color:var(--muted);font-size:14px;
+}
+.header-actions span{
+  cursor:pointer;transition:color .2s;
+}
+.header-actions span:hover{color:var(--primary)}
+/* Sun / Moon icons – Unicode characters, no external fonts needed */
+#dark-toggle{
+  font-size:20px;line-height:1;
+}
+
+/* --------------------------------------------------------------
+   LAYOUT (sidebar + main)
+   -------------------------------------------------------------- */
+.layout{
+  display:flex;padding:24px;gap:24px;
+}
+.sidebar{
+  width:260px;position:sticky;top:84px;
+  height:calc(100vh - 84px);overflow-y:auto;
+  background:var(--sidebar);border-radius:10px;
+}
+.side-item{
+  padding:10px 16px;display:flex;align-items:center;gap:12px;
+  border-radius:6px;margin:0 12px;
+  transition:background .2s;cursor:pointer;
+}
+.side-item:hover{background:#f5f5f5}
+.side-item .icon{font-size:20px;color:var(--muted)}
+.side-item .text{font-size:15px}
+.separator{height:1px;background:var(--border);margin:16px 12px}
+.sidebar h3{
+  margin:16px 12px 8px;font-size:14px;font-weight:500;
+  color:var(--muted);text-transform:uppercase;
+}
+.content{flex:1}
+
+/* --------------------------------------------------------------
+   VIDEO GRID & CARD
+   -------------------------------------------------------------- */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:28px;
+}
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+  display:flex;flex-direction:column;
+  cursor:pointer;transition:transform .2s,box-shadow .2s;
+}
+.card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 12px 24px rgba(0,0,0,.15);
+}
+.thumb{
+  position:relative;width:100%;padding-top:56.25%;background:#000;
+}
+.thumb img{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  object-fit:cover;display:block;
+}
+.duration{
+  position:absolute;right:8px;bottom:8px;
+  background:rgba(0,0,0,.75);color:#fff;
+  padding:4px 6px;font-size:13px;border-radius:4px;
+}
+.info{
+  display:flex;gap:12px;padding:16px;flex-grow:1;
+}
+.channel{
+  width:44px;height:44px;border-radius:50%;overflow:hidden;
+  flex-shrink:0;
+}
+.channel img{width:100%;height:100%;object-fit:cover}
+.titles{flex:1;min-width:0}
+.title{
+  font-weight:500;font-size:15px;margin:0 0 6px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.meta{
+  font-size:13px;color:var(--muted);margin:0;
+}
+.meta .channel-name{font-weight:500;color:var(--text)}
+.meta .views,.meta .date{margin-left:6px}
+
+/* --------------------------------------------------------------
+   LOADING SPINNER
+   -------------------------------------------------------------- */
+.spinner{
+  width:48px;height:48px;border:5px solid var(--border);
+  border-top-color:var(--primary);border-radius:50%;
+  animation:spin 0.9s linear infinite;margin:40px auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* --------------------------------------------------------------
+   LOAD MORE BUTTON
+   -------------------------------------------------------------- */
+#load-more{
+  display:block;width:200px;margin:30px auto;padding:12px 0;
+  background:var(--primary);color:#fff;border:none;
+  border-radius:24px;font-size:15px;cursor:pointer;
+  transition:background .2s;
+}
+#load-more:hover{background:#303f9f}
+#load-more:disabled{
+  background:#9fa8da;cursor:default;
+}
+
+/* --------------------------------------------------------------
+   MODAL (nocookie iframe)
+   -------------------------------------------------------------- */
+.modal{
+  display:none;position:fixed;z-index:10000;left:0;top:0;
+  width:100%;height:100%;background:rgba(0,0,0,.85);
+  backdrop-filter:blur(8px);justify-content:center;
+  align-items:center;overflow:auto;
+}
+.modal-content{
+  position:relative;background:var(--modal-bg);padding:20px;
+  width:84%;max-width:960px;border-radius:12px;
+  box-shadow:0 12px 30px rgba(0,0,0,.7);
+}
+#player{
+  width:100%;height:0;padding-bottom:56.25%;position:relative;background:#000;
+}
+#player iframe{
+  position:absolute;top:0;left:0;width:100%;height:100%;border:none;
+}
+.close-btn{
+  position:absolute;top:12px;right:18px;
+  font-size:34px;color:#fff;cursor:pointer;
+  transition:color .2s;
+}
+.close-btn:hover{color:#ccc}
+.modal-actions{
+  margin-top:12px;text-align:right;
+}
+.btn-yt{
+  background:#e52d27;color:#fff;border:none;
+  padding:10px 18px;border-radius:6px;
+  cursor:pointer;font-size:14px;font-weight:500;
+  transition:background .2s;
+}
+.btn-yt:hover{background:#c0392b}
+
+/* --------------------------------------------------------------
+   STATUS / ERROR MESSAGES
+   -------------------------------------------------------------- */
+.loading-status{
+  text-align:center;padding:30px;color:var(--muted);
+  font-size:1.1em;
+}
+
+/* --------------------------------------------------------------
+   RESPONSIVE
+   -------------------------------------------------------------- */
+@media(max-width:960px){
+  .layout{flex-direction:column;padding:16px;gap:16px}
+  .sidebar{width:100%;height:auto;order:2;position:static;padding-top:12px}
+  .content{order:1}
+  .header{height:auto;padding:12px 16px}
+  .logo .yt-brand{font-size:24px}
+  .brand{font-size:18px}
+  .search{width:100%;order:3;margin-top:12px}
+  .search input{border-radius:24px}
+  .search button{border-radius:24px;border-left:1px solid var(--border)}
+  .header-actions{font-size:13px;gap:16px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+  .modal-content{width:96%;padding:16px}
+  .close-btn{font-size:28px;top:8px;right:12px}
+}
+</style>
+</head>
+<body>
+
+<header class="header" aria-label="Site header">
+  <div class="logo" role="img" aria-label="CloneTube logo">
+    <span class="yt-brand">▶</span>
+    <span class="brand">CloneTube</span>
+  </div>
+
+  <div class="search" aria-label="Search videos">
+    <input type="text" id="search-input" placeholder="Search videos…">
+    <button id="search-button" aria-label="Search">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 512 512"><path d="M505 442.7L405.3 343c-4.6-4.6-10.6-7-17-7H412c-12.8-12.8-30.4-24.4-50.4-32.4C301.6 282.2 250.7 256 212 256C100.2 256 0 155.8 0 44.2V40c0-6.6 5.4-12 12-12H80c6.6 0 12 5.4 12 12v40c0 53 23.6 102.5 64 136.7C180 260.4 223.9 273 244 273c9.7 0 20-1.1 29.7-3.4c9.7-2.3 19.4-6.2 28.4-11.1C335.5 244.3 373.9 237.6 399.1 223.1L429.3 256l-9.5 19.9C431.7 290.5 448 316.4 448 344c0 27.6-16.2 52.5-40.6 64.7zM212 296c-60.1 0-112.4-27.6-148.4-71.4C32.4 199.2 32 170.5 32 138.5V92h24c23.1 0 40.7 16.6 40.7 40v48c0 14.9-3.3 29.9-9.7 44.2C71.6 230.4 40.8 248 22.8 256c19.4 34.1 55.2 56 98.4 56 107.5 0 206.6-54.5 254.2-137.4C412 195.4 358.1 221.7 320.7 233.8c-25.7 8.6-49.8 12.2-73.2 12.2zm-92-136c0-20.9 17-37.8 37.8-37.8s37.8 16.9 37.8 37.8s-17 37.8-37.8 37.8s-37.8-16.9-37.8-37.8z"/></svg>
+    </button>
+  </div>
+
+  <nav class="header-actions" aria-label="User actions">
+    <span>Create</span>
+    <span>Notifications</span>
+    <span>Sign in</span>
+    <!-- Dark‑mode toggle -->
+    <span id="dark-toggle" title="Toggle dark / light mode" aria-label="Toggle dark / light mode">🌙</span>
+  </nav>
+</header>
+
+<main class="layout" aria-label="Main content">
+  <aside class="sidebar" aria-label="Sidebar navigation">
+    <nav class="sidebar-nav">
+      <div class="side-item" aria-label="Home"><span class="icon">🏠</span><span class="text">Home</span></div>
+      <div class="side-item" aria-label="Explore"><span class="icon">🧭</span><span class="text">Explore</span></div>
+      <div class="side-item" aria-label="Subscriptions"><span class="icon">🎯</span><span class="text">Subscriptions</span></div>
+      <hr class="separator">
+      <div class="side-item" aria-label="History"><span class="icon">🕒</span><span class="text">History</span></div>
+      <div class="side-item" aria-label="Watch Later"><span class="icon">⏱</span><span class="text">Watch Later</span></div>
+      <div class="side-item" aria-label="Liked Videos"><span class="icon">👍</span><span class="text">Liked Videos</span></div>
+      <hr class="separator">
+      <h3>Channels</h3>
+      <div class="side-item" aria-label="Channel 1"><span class="icon">👤</span><span class="text">Channel 1</span></div>
+      <div class="side-item" aria-label="Channel 2"><span class="icon">👤</span><span class="text">Channel 2</span></div>
+    </nav>
+  </aside>
+
+  <section class="content" aria-label="Video results">
+    <div class="grid" id="video-grid">
+      <!-- Example placeholders – they will be replaced by live API results -->
+      <article class="card" data-video-id="dQw4w9WgXcQ" aria-label="Rick Astley – Never Gonna Give You Up">
+        <div class="thumb"><img src="https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg" alt="Thumbnail">
+          <span class="duration">03:32</span></div>
+        <div class="info">
+          <div class="channel"><img src="https://via.placeholder.com/44/eee/000?text=RA" alt="Channel avatar"></div>
+          <div class="titles">
+            <p class="title">Rick Astley – Never Gonna Give You Up (Official Music Video)</p>
+            <p class="meta"><span class="channel-name">Rick Astley</span><span class="views">1.5B views</span><span class="date">13 years ago</span></p>
+          </div>
+        </div>
+      </article>
+
+      <article class="card" data-video-id="L_LUpnjgPso" aria-label="Learn JavaScript – Full Course">
+        <div class="thumb"><img src="https://img.youtube.com/vi/L_LUpnjgPso/hqdefault.jpg" alt="Thumbnail">
+          <span class="duration">04:30</span></div>
+        <div class="info">
+          <div class="channel"><img src="https://via.placeholder.com/44/eee/000?text=FC" alt="Channel avatar"></div>
+          <div class="titles">
+            <p class="title">Learn JavaScript - Full Course for Beginners</p>
+            <p class="meta"><span class="channel-name">freeCodeCamp.org</span><span class="views">5M views</span><span class="date">1 year ago</span></p>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Loading spinner (hidden until needed) -->
+    <div id="spinner" style="display:none;" aria-label="Loading">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Load More button (shows after first batch) -->
+    <button id="load-more" style="display:none;">Load More</button>
+
+    <!-- Status / error messages -->
+    <div id="status-msg" class="loading-status" style="display:none;"></div>
+  </section>
+</main>
+
+<!-- ====================== MODAL PLAYER ====================== -->
+<div id="player-modal" class="modal" aria-label="Video player modal">
+  <div class="modal-content">
+    <span class="close-btn" id="close-modal" aria-label="Close player">×</span>
+    <div id="player"></div>
+    <div class="modal-actions" id="modal-actions" style="display:none;">
+      <button class="btn-yt" id="open-on-youtube-btn">Watch on YouTube (nocookie)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==============================================================
+   CONFIGURATION
+   ============================================================== */
+const API_KEY      = 'AIzaSyBpElKUXLE826EblN4osqKi42UJepu2QbI';   // <<<---- INSERT YOUR KEY HERE
+const MAX_RESULTS  = 12;                           // How many videos per request
+let nextPageToken = null;                          // Pagination token (null = first page)
+let currentQuery  = 'most popular';                // Default query on load
+
+/* --------------------------------------------------------------
+   UI ELEMENTS
+   -------------------------------------------------------------- */
+const searchInput   = document.getElementById('search-input');
+const searchButton  = document.getElementById('search-button');
+const videoGrid     = document.getElementById('video-grid');
+const spinner       = document.getElementById('spinner');
+const loadMoreBtn   = document.getElementById('load-more');
+const statusMsg     = document.getElementById('status-msg');
+const modal         = document.getElementById('player-modal');
+const closeModalBtn = document.getElementById('close-modal');
+const playerDiv     = document.getElementById('player');
+const openYtBtn     = document.getElementById('open-on-youtube-btn');
+const modalActions  = document.getElementById('modal-actions');
+const darkToggle    = document.getElementById('dark-toggle');
+
+/* --------------------------------------------------------------
+   UTILS – Formatting helpers
+   -------------------------------------------------------------- */
+function formatViews(num){
+  if(!num) return '';
+  const n = parseInt(num,10);
+  if(n>=1e9) return (n/1e9).toFixed(1)+'B views';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M views';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K views';
+  return n+' views';
+}
+function timeAgo(dateStr){
+  const d = new Date(dateStr);
+  const secs = Math.floor((Date.now()-d)/1000);
+  if(secs<60) return secs+' seconds ago';
+  const mins = Math.floor(secs/60);
+  if(mins<60) return mins+' minutes ago';
+  const hrs = Math.floor(mins/60);
+  if(hrs<24) return hrs+' hours ago';
+  const days = Math.floor(hrs/24);
+  if(days<30) return days+' days ago';
+  const months = Math.floor(days/30);
+  if(months<12) return months+' months ago';
+  return Math.floor(months/12)+' years ago';
+}
+
+/* --------------------------------------------------------------
+   BUILD CARD FROM API ITEM
+   -------------------------------------------------------------- */
+function buildCard(item){
+  const videoId = item.id?.videoId;
+  const sn     = item.snippet;
+  const thumb  = sn.thumbnails?.high?.url || sn.thumbnails?.default?.url || '';
+  const title  = sn.title;
+  const channel= sn.channelTitle;
+  const pub    = sn.publishedAt;
+
+  // Approximate duration and view count – accurate values need a second API call (videos.list)
+  const fakeDur   = videoId==='dQw4w9WgXcQ' ?
+                    '03:32' :
+                    `${Math.floor(Math.random()*20)}:${String(Math.floor(Math.random()*60)).padStart(2,'0')}`;
+  const fakeViews = formatViews(Math.floor(Math.random()*1_000_000_000));
+
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.dataset.videoId = videoId;
+  card.setAttribute('aria-label', title);
+  card.innerHTML = `
+    <div class="thumb">
+      <img src="${thumb}" alt="Thumbnail for ${title}">
+      <span class="duration">${fakeDur}</span>
+    </div>
+    <div class="info">
+      <div class="channel"><img src="${sn.thumbnails?.default?.url || 'https://via.placeholder.com/44'}"
+                               alt="${channel} avatar"></div>
+      <div class="titles">
+        <p class="title">${title}</p>
+        <p class="meta"><span class="channel-name">${channel}</span>
+                         <span class="views">${fakeViews}</span>
+                         <span class="date">${timeAgo(pub)}</span></p>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+/* --------------------------------------------------------------
+   FETCH VIDEOS (with pagination)
+   -------------------------------------------------------------- */
+async function fetchVideos(query, pageToken=null){
+  // UI state
+  spinner.style.display = 'block';
+  loadMoreBtn.style.display = 'none';
+  statusMsg.style.display = 'none';
+
+  if(!API_KEY || API_KEY==='YOUR_YOUTUBE_DATA_API_KEY'){
+    spinner.style.display = 'none';
+    statusMsg.textContent = '❗ API key missing – replace the placeholder in the script.';
+    statusMsg.style.color = 'red';
+    statusMsg.style.display = 'block';
+    return;
+  }
+
+  const endpoint = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${MAX_RESULTS}`
+                 + `&q=${encodeURIComponent(query)}&type=video&key=${API_KEY}`
+                 + (pageToken ? `&pageToken=${pageToken}` : '');
+
+  try{
+    const resp = await fetch(endpoint);
+    if(!resp.ok){
+      const err = await resp.json();
+      throw new Error(err.error?.message ?? `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+
+    // Append new cards
+    data.items.forEach(item => videoGrid.appendChild(buildCard(item)));
+
+    // Pagination token
+    nextPageToken = data.nextPageToken || null;
+
+    // Show or hide Load More
+    if(nextPageToken) loadMoreBtn.style.display = 'block';
+    else loadMoreBtn.style.display = 'none';
+
+    // No results on first page?
+    if(!data.items.length && !pageToken){
+      statusMsg.textContent = 'No results found. Try a different query.';
+      statusMsg.style.display = 'block';
+    }
+  }catch(err){
+    console.error(err);
+    statusMsg.textContent = `Error: ${err.message}`;
+    statusMsg.style.color = 'red';
+    statusMsg.style.display = 'block';
+  }finally{
+    spinner.style.display = 'none';
+  }
+}
+
+/* --------------------------------------------------------------
+   SEARCH / LOAD MORE HANDLERS
+   -------------------------------------------------------------- */
+function doSearch(){
+  const q = searchInput.value.trim() || 'most popular';
+  currentQuery = q;
+  videoGrid.innerHTML = '';        // clear previous cards
+  nextPageToken = null;
+  fetchVideos(q);
+}
+searchButton.addEventListener('click', doSearch);
+searchInput.addEventListener('keypress', e => {
+  if(e.key==='Enter'){
+    e.preventDefault();
+    doSearch();
+  }
+});
+loadMoreBtn.addEventListener('click', () => {
+  if(nextPageToken){
+    fetchVideos(currentQuery, nextPageToken);
+  }
+});
+
+/* --------------------------------------------------------------
+   LOGO = return to default popular videos
+   -------------------------------------------------------------- */
+document.querySelector('.logo').addEventListener('click', () => {
+  searchInput.value = '';
+  doSearch();
+});
+
+/* --------------------------------------------------------------
+   MODAL PLAYER (nocookie embed)
+   -------------------------------------------------------------- */
+let currentVideoId = null; // ID of video currently in modal
+
+function openModal(videoId){
+  currentVideoId = videoId;
+  modal.style.display = 'flex';
+  modalActions.style.display = 'none'; // hide fallback until we know
+
+  const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`;
+
+  // Insert the iframe
+  playerDiv.innerHTML = `<iframe src="${embedUrl}"
+                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                     allowfullscreen></iframe>`;
+
+  // Defensive fallback – if the iframe never loads within 3 s, show the button
+  const timeout = setTimeout(() => {
+    modalActions.style.display = 'block';
+  }, 3000);
+
+  const iframe = playerDiv.querySelector('iframe');
+  iframe.onload = () => {
+    clearTimeout(timeout);
+    modalActions.style.display = 'none'; // embed succeeded → hide fallback
+  };
+}
+function closeModal(){
+  modal.style.display = 'none';
+  playerDiv.innerHTML = '';
+  currentVideoId = null;
+}
+openYtBtn.addEventListener('click', () => {
+  if(currentVideoId){
+    const url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+});
+videoGrid.addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if(card){
+    const vid = card.dataset.videoId;
+    if(vid) openModal(vid);
+  }
+});
+closeModalBtn.addEventListener('click', closeModal);
+window.addEventListener('click', e => {
+  if(e.target===modal) closeModal();
+});
+
+/* --------------------------------------------------------------
+   DARK‑MODE TOGGLE
+   -------------------------------------------------------------- */
+function applyTheme(dark){
+  if(dark){
+    document.body.classList.add('dark-mode');
+    darkToggle.textContent = '☀️'; // sun icon for "light mode" next click
+  }else{
+    document.body.classList.remove('dark-mode');
+    darkToggle.textContent = '🌙'; // moon icon for "dark mode" next click
+  }
+  localStorage.setItem('darkMode', dark ? 'true' : 'false');
+}
+darkToggle.addEventListener('click', () => {
+  const isDark = document.body.classList.contains('dark-mode');
+  applyTheme(!isDark);
+});
+// Load stored preference on start
+const stored = localStorage.getItem('darkMode');
+if(stored === 'true') applyTheme(true);
+
+/* --------------------------------------------------------------
+   INITIAL LOAD (popular videos)
+   -------------------------------------------------------------- */
+fetchVideos('most popular');
+</script>
+
+</body>
+</html>
