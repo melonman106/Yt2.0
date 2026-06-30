@@ -514,8 +514,13 @@ body.dark .lnk-btn{color:#3ea6ff}
 </div>
 
 <script>
-const API = 'AIzaSyBpElKUXLE826EblN4osqKi42UJepu2QbI';
 const MAX = 20;
+
+async function searchYouTube(query) {
+  const res = await fetch(`/youtube?q=${encodeURIComponent(query)}&max=${MAX}`);
+  const data = await res.json();
+  return data;
+}
 
 // ── STATE ──────────────────────────────────────────────
 let tab = 'home', query = 'trending', pt = null;
