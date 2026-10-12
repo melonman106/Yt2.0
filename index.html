@@ -7,6 +7,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!-- Clerk: sign-in + saving everything to the signed-in account -->
+<script
+  defer
+  crossorigin="anonymous"
+  src="https://equipped-insect-97.clerk.accounts.dev/npm/@clerk/ui@1/dist/ui.browser.js"
+  type="text/javascript">
+</script>
+<script
+  defer
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_ZXF1aXBwZWQtaW5zZWN0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"
+  src="https://equipped-insect-97.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js"
+  type="text/javascript">
+</script>
 <style>
 :root{--yt-red:#f00;--bg:#fff;--bg2:#f9f9f9;--bg3:#f2f2f2;--text:#0f0f0f;--text2:#606060;--text3:#909090;--border:#e5e5e5;--hdr:#fff;--pop:#fff;--hover:rgba(0,0,0,.05);--active:rgba(0,0,0,.1);--chip-on:#0f0f0f;--chip-on-text:#fff;--chip-off:rgba(0,0,0,.05);--chip-hov:rgba(0,0,0,.1);--shadow:0 4px 32px rgba(0,0,0,.15);--blue:#065fd4;--font:'Roboto',Arial,sans-serif;--hh:56px}
 body.dark{--bg:#0f0f0f;--bg2:#181818;--bg3:#272727;--text:#f1f1f1;--text2:#aaa;--text3:#717171;--border:#303030;--hdr:#0f0f0f;--pop:#282828;--hover:rgba(255,255,255,.1);--active:rgba(255,255,255,.15);--chip-on:#f1f1f1;--chip-on-text:#0f0f0f;--chip-off:rgba(255,255,255,.1);--chip-hov:rgba(255,255,255,.2);--shadow:0 4px 32px rgba(0,0,0,.7);--blue:#3ea6ff}
@@ -448,6 +462,30 @@ body.dark .toggle.on{background:#3a6ea5}
 @keyframes ti{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes to{to{opacity:0}}
 
+/* ACCOUNT + PROFILE PICTURE CROP */
+[hidden]{display:none!important}
+.sign-btn.wait{opacity:.6}
+.acct{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;margin-bottom:16px}
+.acct-name{font-size:18px;font-weight:500;margin-top:8px}
+.sync-line{font-size:12px;color:var(--text2);min-height:16px;margin-top:4px}
+.acct-btns{display:flex;flex-direction:column;gap:8px}
+.acct-btns .pill,.acct-btns .pill-blue{width:100%;justify-content:center;margin:0}
+.acct-note{margin-top:16px;font-size:12px}
+.crop-drop{border:2px dashed var(--border);border-radius:12px;padding:32px 16px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;outline-offset:2px}
+.crop-drop.over{border-color:var(--blue);background:var(--hover)}
+.crop-drop svg{width:48px;height:48px;color:var(--text3)}
+.crop-stage{position:relative;width:100%;max-width:320px;aspect-ratio:1;margin:0 auto;border-radius:12px;overflow:hidden;background:#222;touch-action:none}
+.crop-stage canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+.crop-stage canvas.grab{cursor:grabbing}
+.crop-zoom{display:flex;align-items:center;gap:12px;max-width:320px;margin:16px auto 0}
+.crop-zoom svg{width:20px;height:20px;color:var(--text2)}
+.crop-zoom input{flex:1;accent-color:var(--blue)}
+.crop-prev{display:flex;align-items:center;gap:12px;justify-content:center;margin:16px 0 4px}
+.crop-prev canvas{border-radius:50%;background:var(--bg3)}
+.crop-note{font-size:12px;color:var(--text2);text-align:center;margin-bottom:12px}
+.crop-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.crop-actions .pill-blue:disabled{opacity:.6;cursor:default}
+
 /* RESPONSIVE */
 @media(max-width:1015px){
   .watch{flex-direction:column;padding:0 0 24px;gap:0}
@@ -541,7 +579,8 @@ const PROXY='/youtube';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clean=o=>{const r={};for(const k in o){if(o[k]!==undefined&&o[k]!==null&&o[k]!=='')r[k]=o[k];}return r;};
-const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+let lsHook=null;
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}if(lsHook)lsHook(k);}};
 const compact=n=>{n=Number(n)||0;for(const [d,s] of [[1e9,'B'],[1e6,'M'],[1e3,'K']]){if(n>=d){const x=n/d;return (x<10?String(Math.floor(x*10)/10):String(Math.floor(x)))+s;}}return String(n);};
 const ago=ts=>{const s=(Date.now()-new Date(ts))/1000;for(const [d,n] of [[31536000,'year'],[2592000,'month'],[604800,'week'],[86400,'day'],[3600,'hour'],[60,'minute']]){if(s>=d){const k=Math.floor(s/d);return k+' '+n+(k>1?'s':'')+' ago';}}return 'Just now';};
 const isoSec=iso=>{const m=/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(iso||'');if(!m)return 0;return (+m[1]||0)*86400+(+m[2]||0)*3600+(+m[3]||0)*60+(+m[4]||0);};
@@ -601,7 +640,7 @@ const ic=n=>'<svg viewBox="0 0 24 24"><path d="'+P[n]+'"/></svg>';
 let cfg=Object.assign({home:true,personalise:true,autoplay:true,autonext:true,saveHist:true,compact:false,region:'US'},LS.get('yt_cfg',{}));
 let watchHist=LS.get('yt_hist',[]);
 let subs=LS.get('yt_subs',[]);
-let user=LS.get('yt_user',null);
+let user=null;try{localStorage.removeItem('yt_user');}catch(e){}
 let lists=LS.get('yt_lists',null)||{};
 if(!lists.WL)lists.WL={name:'Watch later',items:[]};
 if(!lists.LL)lists.LL={name:'Liked videos',items:[]};
@@ -1483,32 +1522,375 @@ $('voice-btn').addEventListener('click',()=>{
   },()=>{if(recog){try{recog.stop();}catch(e){}recog=null;}});
 });
 
-/* ================= SIGN IN (local account) ================= */
-function updateUserUI(){
-  const b=$('user-ava-btn'),s=$('sign-in-btn');
-  if(user){
-    s.style.display='none';b.style.display='flex';b.style.background=clr(user.name);
-    if(user.avatarUrl){b.innerHTML='<img src="'+esc(user.avatarUrl)+'" alt="">';b.querySelector('img').onerror=function(){b.textContent=user.name.charAt(0).toUpperCase();};}
-    else b.textContent=user.name.charAt(0).toUpperCase();
-  }else{s.style.display='flex';b.style.display='none';}
+/* ================= ACCOUNT (Clerk) + SAVE TO ACCOUNT ================= */
+// Sign-in is handled by Clerk. Everything the app remembers (subscriptions, playlists, likes, history,
+// settings) is saved into the signed-in user's Clerk metadata as one compact string, so it follows
+// the account to any device. Clerk limits metadata to 8 KB, so only IDs are stored (titles and channel
+// names are fetched again from YouTube when needed) and the oldest history is dropped first if space runs out.
+const AUTH={state:'loading',clerk:null,cu:null,first:true,listening:false};   // state: loading | ready | off
+const cloud={ready:false,applying:false,t:null,lastStr:'',busy:false,again:false,fails:0,status:'idle',trimmed:false};
+const SYNC_KEYS=new Set(['yt_cfg','yt_hist','yt_subs','yt_lists','yt_rate','yt_searches','yt_hidden','yt_dark']);
+const USER_KEYS=['yt_hist','yt_subs','yt_lists','yt_rate','yt_searches','yt_hidden','yt_uid'];
+const ID_RE=/^[A-Za-z0-9_-]{6,40}$/;
+const SNAP_BUDGET=7600;
+const LEVELS=[
+  {hist:150,q:8,x:40,wl:150,ll:150,pl:100,subs:80},
+  {hist:100,q:5,x:20,wl:120,ll:120,pl:80,subs:80},
+  {hist:60,q:0,x:0,wl:100,ll:100,pl:60,subs:60},
+  {hist:30,q:0,x:0,wl:70,ll:70,pl:40,subs:50},
+  {hist:0,q:0,x:0,wl:50,ll:50,pl:30,subs:40},
+  {hist:0,q:0,x:0,wl:25,ll:25,pl:15,subs:30}
+];
+const CFG_KEYS=['home','personalise','autoplay','autonext','saveHist','compact'];
+const b36=n=>Math.floor(n).toString(36);
+const idsOf=a=>a.map(x=>x.id).filter(i=>ID_RE.test(i));
+const lsRaw=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+lsHook=k=>{if(SYNC_KEYS.has(k))scheduleSync();};
+
+function buildSnapshot(L){
+  return JSON.stringify({
+    v:1,
+    c:CFG_KEYS.map(k=>cfg[k]?1:0).join('')+(cfg.region||'US'),
+    d:document.body.classList.contains('dark')?1:0,
+    s:subs.slice(0,L.subs).map(x=>x.id).filter(i=>ID_RE.test(i)).join(','),
+    h:watchHist.slice(0,L.hist).filter(x=>ID_RE.test(x.id)).map(x=>x.id+'.'+b36((x.ts||0)/1000)).join(','),
+    w:idsOf(lists.WL.items.slice(0,L.wl)).join(','),
+    l:idsOf(lists.LL.items.slice(0,L.ll)).join(','),
+    r:Object.keys(rates).filter(k=>rates[k]==='dislike'&&ID_RE.test(k)).slice(0,30).join(','),
+    p:Object.keys(lists).filter(k=>k.indexOf('pl_')===0).slice(0,20).map(k=>[k,lists[k].name,idsOf(lists[k].items.slice(0,L.pl)).join(',')]),
+    q:searches.slice(0,L.q).join('|'),
+    x:(L.x?hidden.slice(-L.x):[]).filter(i=>ID_RE.test(i)).join(',')
+  });
 }
-function profileDialog(){
-  if(user){
-    dialog('Your account','<div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:16px"><span class="ava" style="width:80px;height:80px;font-size:36px;background:'+clr(user.name)+'">'+(user.avatarUrl?'<img src="'+esc(user.avatarUrl)+'" alt="">':esc(user.name.charAt(0).toUpperCase()))+'</span><b style="font-size:18px">'+esc(user.name)+'</b><span class="muted">'+esc(user.handle||'')+'</span></div><label class="muted">Display name</label><input class="field" id="pf-name" value="'+esc(user.name)+'"><label class="muted">Profile picture URL</label><input class="field" id="pf-img" value="'+esc(user.avatarUrl||'')+'" placeholder="https://example.com/photo.jpg"><div class="dlg-row"><button class="pill-blue" data-act="pf-save" style="flex:1">Save changes</button><button class="pill" data-act="pf-out" style="flex:1;justify-content:center">Sign out</button></div>');
-  }else{
-    dialog('Sign in','<p class="muted" style="margin-bottom:12px">Create a local account on this device to show a name and avatar. Nothing is sent anywhere.</p><label class="muted">Username</label><input class="field" id="pf-name" placeholder="e.g. Alex"><label class="muted">Profile picture URL (optional)</label><input class="field" id="pf-img" placeholder="https://example.com/photo.jpg"><button class="pill-blue" data-act="pf-in" style="width:100%">Create account &amp; sign in</button>',b=>{
-      b.querySelector('#pf-name').focus();b.querySelector('#pf-name').addEventListener('keydown',e=>{if(e.key==='Enter')profileSave(true);});
-    });
+function pickSnapshot(extra){
+  const enc=new TextEncoder();
+  let str='',level=0;
+  for(let i=0;i<LEVELS.length;i++){
+    level=i;str=buildSnapshot(LEVELS[i]);
+    if(enc.encode(JSON.stringify(Object.assign({},extra,{yt:str}))).length<=SNAP_BUDGET)break;
+  }
+  return{str,level};
+}
+function parseSnapshot(raw){
+  let o;try{o=typeof raw==='string'?JSON.parse(raw):raw;}catch(e){return null;}
+  if(!o||o.v!==1)return null;
+  const ids=s=>String(s||'').split(',').filter(i=>ID_RE.test(i));
+  const out={cfg:null,dark:null,subs:ids(o.s),hist:[],wl:ids(o.w),ll:ids(o.l),dis:ids(o.r),pls:[],q:[],x:ids(o.x)};
+  if(typeof o.c==='string'&&o.c.length>=CFG_KEYS.length){
+    const c={};CFG_KEYS.forEach((k,i)=>{c[k]=o.c.charAt(i)==='1';});
+    const reg=o.c.slice(CFG_KEYS.length);if(/^[A-Z]{2}$/.test(reg))c.region=reg;
+    out.cfg=c;
+  }
+  if(o.d===0||o.d===1)out.dark=!!o.d;
+  String(o.h||'').split(',').forEach(p=>{const a=p.split('.');if(ID_RE.test(a[0]||''))out.hist.push({id:a[0],ts:(parseInt(a[1],36)||0)*1000});});
+  (Array.isArray(o.p)?o.p:[]).forEach(p=>{if(Array.isArray(p)&&/^pl_[a-z0-9]+$/.test(p[0]))out.pls.push({key:p[0],name:String(p[1]||'Playlist').slice(0,60),ids:ids(p[2])});});
+  out.q=String(o.q||'').split('|').filter(Boolean).slice(0,12);
+  return out;
+}
+
+/* bring a saved snapshot into the app. 'replace' = the account wins; 'merge' = also keep what this device had (first sign-in) */
+const stubVideo=id=>({id,title:'',channel:'',channelId:'',dur:0,pub:null,views:null});
+const uniqById=a=>{const s=new Set();return a.filter(x=>!s.has(x.id)&&s.add(x.id));};
+function applySnapshot(sn,mode){
+  const merge=mode==='merge';
+  cloud.applying=true;
+  try{
+    if(sn.cfg)cfg=Object.assign({},cfg,sn.cfg);
+    if(sn.dark!==null)applyDark(sn.dark);
+    const pool={};
+    Object.keys(lists).forEach(k=>lists[k].items.forEach(x=>{pool[x.id]=x;}));
+    watchHist.forEach(x=>{if(!pool[x.id]||!pool[x.id].title)pool[x.id]=x;});
+    const mk=id=>pool[id]||stubVideo(id);
+    const have=new Map(subs.map(s=>[s.id,s]));
+    const cs=sn.subs.map(id=>have.get(id)||{id,name:'',avatar:''});
+    subs=merge?cs.concat(subs.filter(s=>sn.subs.indexOf(s.id)<0)):cs;
+    const join=(cloudIds,localItems)=>merge?uniqById(cloudIds.map(mk).concat(localItems)):cloudIds.map(mk);
+    const nl={WL:{name:'Watch later',items:join(sn.wl,lists.WL.items)},LL:{name:'Liked videos',items:join(sn.ll,lists.LL.items)}};
+    sn.pls.forEach(p=>{const loc=lists[p.key];nl[p.key]={name:p.name,items:join(p.ids,loc?loc.items:[])};});
+    if(merge)Object.keys(lists).forEach(k=>{if(k.indexOf('pl_')===0&&!nl[k])nl[k]=lists[k];});
+    lists=nl;
+    const nr={};
+    lists.LL.items.forEach(x=>{nr[x.id]='like';});
+    sn.dis.forEach(id=>{nr[id]='dislike';});
+    if(merge)Object.keys(rates).forEach(k=>{if(!nr[k])nr[k]=rates[k];});
+    rates=nr;
+    const cloudH=sn.hist.map(h=>Object.assign({},mk(h.id),{thumbnail:thumbUrl(h.id),ts:h.ts||Date.now()}));
+    let H=cloudH;
+    if(merge){
+      const m=new Map();
+      cloudH.concat(watchHist).forEach(x=>{const o=m.get(x.id);if(!o)m.set(x.id,x);else m.set(x.id,Object.assign({},o.title?o:x,{ts:Math.max(o.ts||0,x.ts||0)}));});
+      H=[...m.values()].sort((a,b)=>(b.ts||0)-(a.ts||0));
+    }
+    watchHist=H.slice(0,300);
+    searches=merge?[...new Set(sn.q.concat(searches))].slice(0,12):sn.q;
+    hidden=merge?[...new Set(sn.x.concat(hidden))].slice(-500):sn.x;
+    saveCfg();saveLists();saveSubs();LS.set('yt_hist',watchHist);LS.set('yt_rate',rates);LS.set('yt_searches',searches);LS.set('yt_hidden',hidden);
+  }finally{cloud.applying=false;}
+}
+/* ids restored from the account have no titles yet: fetch them (1 API unit per 50 videos / channels) */
+async function hydrateStubs(){
+  const need=new Set();
+  watchHist.forEach(x=>{if(!x.title)need.add(x.id);});
+  Object.keys(lists).forEach(k=>lists[k].items.forEach(x=>{if(!x.title)need.add(x.id);}));
+  let changed=false;
+  if(need.size){
+    const got={};
+    try{(await getVideos([...need])).forEach(v=>{got[v.id]=norm(v);});}catch(e){return false;}
+    const fill=x=>{
+      if(x.title)return;const m=got[x.id];
+      if(m){x.title=m.title;x.channel=m.channel;x.channelId=m.cid;x.dur=m.dur;x.pub=m.pub;x.views=m.views;}else x.title='Unavailable video';
+      changed=true;
+    };
+    watchHist.forEach(fill);Object.keys(lists).forEach(k=>lists[k].items.forEach(fill));
+  }
+  const sneed=subs.filter(s=>!s.name).map(s=>s.id);
+  if(sneed.length){
+    try{await getChannels(sneed);}catch(e){}
+    subs.forEach(s=>{if(s.name)return;const c=cCache[s.id],t=c&&c.snippet&&c.snippet.title;s.name=t||'Channel';s.avatar=cAvatar(s.id)||'';changed=true;});
+  }
+  if(changed){cloud.applying=true;try{LS.set('yt_hist',watchHist);saveLists();saveSubs();}finally{cloud.applying=false;}}
+  return changed;
+}
+function wipeUserData(){
+  cloud.applying=true;
+  try{
+    watchHist=[];subs=[];lists={WL:{name:'Watch later',items:[]},LL:{name:'Liked videos',items:[]}};rates={};searches=[];hidden=[];
+    USER_KEYS.forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+  }finally{cloud.applying=false;}
+}
+
+/* saving */
+const syncText=()=>({idle:'Saved to your account',saving:'Saving to your account…',error:"Couldn't save to your account. Retrying…"}[cloud.status]||'');
+function setSync(st){cloud.status=st;const el=$('sync-line');if(el)el.textContent=syncText();}
+function scheduleSync(now){
+  if(cloud.applying||!cloud.ready)return;
+  clearTimeout(cloud.t);cloud.t=setTimeout(pushNow,now?0:2000);
+}
+async function writeMeta(cu,str){
+  if(typeof cu.updateMetadata==='function'){
+    try{await cu.updateMetadata({unsafeMetadata:{yt:str}});return;}catch(e){console.warn('updateMetadata failed, falling back to update()',e);}
+  }
+  await cu.update({unsafeMetadata:Object.assign({},cu.unsafeMetadata||{},{yt:str})});
+}
+async function pushNow(){
+  const cu=AUTH.cu;
+  if(!cu||!cloud.ready)return;
+  if(cloud.busy){cloud.again=true;return;}
+  cloud.busy=true;cloud.t=null;
+  try{
+    const extra=Object.assign({},cu.unsafeMetadata||{});delete extra.yt;
+    const pick=pickSnapshot(extra);
+    if(pick.str===cloud.lastStr){setSync('idle');return;}
+    setSync('saving');
+    await writeMeta(cu,pick.str);
+    cloud.lastStr=pick.str;cloud.fails=0;setSync('idle');
+    if(pick.level>0&&!cloud.trimmed){cloud.trimmed=true;toast('Some older history was left out of your account copy to stay under its storage limit','ℹ️',5000);}
+  }catch(e){
+    console.warn('save to account failed',e);
+    cloud.fails++;setSync('error');
+    if(cloud.fails<=3)cloud.t=setTimeout(pushNow,15000*cloud.fails);
+    else if(cloud.fails===4)toast("Couldn't save to your account",'⚠️');
+  }finally{
+    cloud.busy=false;
+    if(cloud.again){cloud.again=false;scheduleSync();}
   }
 }
-function profileSave(isNew){
-  const name=($('pf-name').value||'').trim(),img=($('pf-img').value||'').trim();
-  if(!name){toast('Please enter a name','⚠️');return;}
-  user={name,avatarUrl:img,handle:'@'+name.toLowerCase().replace(/\s+/g,'_')};
-  LS.set('yt_user',user);updateUserUI();closeDialog();toast(isNew?'Welcome, '+name+'!':'Profile updated','🎉');
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&cloud.t){clearTimeout(cloud.t);pushNow();}});
+window.addEventListener('pagehide',()=>{if(cloud.t){clearTimeout(cloud.t);pushNow();}});
+
+/* user + header */
+function mapUser(cu){
+  if(!cu)return null;
+  const email=(cu.primaryEmailAddress&&cu.primaryEmailAddress.emailAddress)||'';
+  return{id:cu.id,name:cu.fullName||cu.username||cu.firstName||(email?email.split('@')[0]:'You'),avatarUrl:cu.imageUrl||'',hasImage:!!cu.hasImage,email,handle:cu.username?'@'+cu.username:email};
 }
-$('sign-in-btn').addEventListener('click',profileDialog);
-$('user-ava-btn').addEventListener('click',profileDialog);
+function updateUserUI(){
+  const b=$('user-ava-btn'),s=$('sign-in-btn');
+  s.classList.toggle('wait',AUTH.state==='loading');
+  if(user){
+    s.style.display='none';b.style.display='flex';b.style.background=clr(user.name);
+    b.setAttribute('aria-label','Account: '+user.name);b.title=user.name;
+    const ini=()=>{b.textContent=user.name.charAt(0).toUpperCase();};
+    if(user.avatarUrl){b.innerHTML='<img src="'+esc(user.avatarUrl)+'" alt="">';b.querySelector('img').onerror=ini;}else ini();
+  }else{s.style.display='flex';b.style.display='none';}
+}
+async function onAuthUser(cu){
+  const first=AUTH.first;AUTH.first=false;
+  if(cu){
+    if(AUTH.cu&&AUTH.cu.id===cu.id){AUTH.cu=cu;user=mapUser(cu);updateUserUI();return;}
+    AUTH.cu=cu;user=mapUser(cu);updateUserUI();
+    const prev=lsRaw('yt_uid');
+    if(prev&&prev!==cu.id)wipeUserData();                       // leftovers from a different account
+    const wasSynced=prev===cu.id;
+    const raw=cu.unsafeMetadata&&cu.unsafeMetadata.yt;
+    const sn=raw?parseSnapshot(raw):null;
+    if(sn)applySnapshot(sn,wasSynced?'replace':'merge');        // first time on this device: keep guest data too
+    try{localStorage.setItem('yt_uid',cu.id);}catch(e){}
+    cloud.lastStr=typeof raw==='string'?raw:'';cloud.ready=true;cloud.fails=0;setSync('idle');
+    navCollapsed=!!cfg.compact;applyNav();renderSidebar();
+    if(!wasSynced||sn)scheduleSync();
+    if(sn&&(curRoute==='feed'||curRoute==='playlist'))render();
+    hydrateStubs().then(ch=>{if(ch&&AUTH.cu&&AUTH.cu.id===cu.id){renderSidebar();if(curRoute==='feed'||curRoute==='playlist')render();}}).catch(()=>{});
+    if(!first)toast('Signed in as '+user.name,'👋');
+  }else{
+    const had=!!AUTH.cu;
+    AUTH.cu=null;user=null;cloud.ready=false;clearTimeout(cloud.t);cloud.t=null;
+    if(had||lsRaw('yt_uid')){wipeUserData();renderSidebar();if(['feed','playlist','home'].indexOf(curRoute)>=0)render();}
+    updateUserUI();
+    if(had&&!first)toast('Signed out','👋');
+  }
+}
+let authTry=0;
+function initAuth(){
+  const my=++authTry;
+  AUTH.state='loading';updateUserUI();
+  const waitForClerk=()=>new Promise(res=>{const t0=Date.now();(function poll(){if(window.Clerk)return res(window.Clerk);if(Date.now()-t0>10000)return res(null);setTimeout(poll,150);})();});
+  (async()=>{
+    const C=await waitForClerk();
+    if(my!==authTry)return;
+    if(!C){AUTH.state='off';updateUserUI();return;}
+    try{
+      if(!C.loaded){
+        const opts=window.__internal_ClerkUICtor?{ui:{ClerkUI:window.__internal_ClerkUICtor}}:{};
+        await Promise.race([C.load(opts),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Clerk took too long to load')),15000))]);
+      }
+    }catch(e){console.warn('Clerk failed to load',e);if(my===authTry){AUTH.state='off';updateUserUI();}return;}
+    if(my!==authTry)return;
+    AUTH.clerk=C;AUTH.state='ready';
+    if(!AUTH.listening){AUTH.listening=true;C.addListener(em=>{onAuthUser((em&&em.user)||null);});}
+    updateUserUI();
+    if(!AUTH.cu&&C.user)onAuthUser(C.user);
+    else if(!AUTH.cu&&AUTH.first&&C.isSignedIn===false)onAuthUser(null);
+  })();
+}
+function startSignIn(){
+  if(AUTH.state==='ready'&&AUTH.clerk){
+    try{AUTH.clerk.openSignIn({fallbackRedirectUrl:location.href,signUpFallbackRedirectUrl:location.href});}catch(e){toast("Couldn't open sign-in",'⚠️');}
+    return;
+  }
+  if(AUTH.state==='loading'){toast('Sign-in is still loading…','⏳');return;}
+  toast('Sign-in could not load. It may be blocked on this network. Trying again…','⚠️',4000);initAuth();
+}
+function accountDialog(){
+  if(!user){startSignIn();return;}
+  const ava='<span class="ava" style="width:80px;height:80px;font-size:36px;background:'+clr(user.name)+'">'+(user.avatarUrl?'<img src="'+esc(user.avatarUrl)+'" alt="">':esc(user.name.charAt(0).toUpperCase()))+'</span>';
+  dialog('Your account','<div class="acct">'+ava+'<b class="acct-name">'+esc(user.name)+'</b><span class="muted">'+esc(user.email||user.handle||'')+'</span><div class="sync-line" id="sync-line">'+esc(syncText())+'</div></div>'+
+    '<div class="acct-btns"><button class="pill-blue" data-act="acct-avatar">Update profile picture</button><button class="pill" data-act="acct-manage">Manage account</button><button class="pill" data-act="acct-out">Sign out</button></div>'+
+    '<p class="muted acct-note">Your subscriptions, playlists, liked videos, watch history and settings are saved to this account.</p>');
+}
+$('sign-in-btn').addEventListener('click',startSignIn);
+$('user-ava-btn').addEventListener('click',accountDialog);
+
+/* ================= PROFILE PICTURE CROP ================= */
+const crop={img:null,url:null,w:0,h:0,min:1,z:1,ox:0,oy:0,S:320,C:280,dpr:1,drag:null,saving:false};
+const MINUS='<svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>';
+function avatarDialog(){
+  if(!AUTH.cu){startSignIn();return;}
+  dialog('Update profile picture',
+    '<div class="crop"><div class="crop-drop" id="crop-drop" tabindex="0"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg><div>Drag a photo here</div><button class="pill-blue" data-act="crop-pick">Choose a photo</button><div class="muted" style="font-size:12px">PNG, JPG, WEBP or GIF</div>'+(AUTH.cu.hasImage?'<button class="pill" data-act="crop-remove">Remove current photo</button>':'')+'</div>'+
+    '<input type="file" id="crop-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>'+
+    '<div id="crop-work" hidden><div class="crop-stage" id="crop-stage"><canvas id="crop-cv" tabindex="0" aria-label="Profile picture crop area. Drag to move the photo. Use plus and minus to zoom."></canvas></div>'+
+    '<div class="crop-zoom">'+MINUS+'<input type="range" id="crop-zoom" min="100" max="400" value="100" aria-label="Zoom">'+ic('add')+'</div>'+
+    '<div class="crop-prev"><span class="muted">Preview</span><canvas id="crop-p1" width="64" height="64"></canvas><canvas id="crop-p2" width="32" height="32"></canvas></div>'+
+    '<div class="crop-note">Drag the photo to choose the area. Scroll or use the slider to zoom.</div>'+
+    '<div class="crop-actions"><button class="pill" data-act="crop-pick">Different photo</button><button class="pill-blue" data-act="crop-save" id="crop-save">Save</button></div></div>'+
+    '<div class="err" id="crop-err" role="alert"></div></div>',mountCropper,cropFree);
+}
+function cropFree(){if(crop.url){try{URL.revokeObjectURL(crop.url);}catch(e){}}crop.url=null;crop.img=null;crop.drag=null;crop.saving=false;}
+function mountCropper(root){
+  const file=root.querySelector('#crop-file'),drop=root.querySelector('#crop-drop'),cv=root.querySelector('#crop-cv'),zoom=root.querySelector('#crop-zoom');
+  file.addEventListener('change',()=>{if(file.files&&file.files[0])cropLoad(file.files[0]);file.value='';});
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+  drop.addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)cropLoad(f);});
+  drop.addEventListener('keydown',e=>{if(e.target===drop&&(e.key==='Enter'||e.key===' ')){e.preventDefault();file.click();}});
+  cv.addEventListener('pointerdown',e=>{crop.drag={x:e.clientX,y:e.clientY,ox:crop.ox,oy:crop.oy};try{cv.setPointerCapture(e.pointerId);}catch(_){}cv.classList.add('grab');});
+  cv.addEventListener('pointermove',e=>{
+    if(!crop.drag)return;
+    const k=crop.S/(cv.getBoundingClientRect().width||crop.S);
+    crop.ox=crop.drag.ox+(e.clientX-crop.drag.x)*k;crop.oy=crop.drag.oy+(e.clientY-crop.drag.y)*k;
+    cropClamp();cropDraw();
+  });
+  const end=()=>{crop.drag=null;cv.classList.remove('grab');};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  cv.addEventListener('wheel',e=>{e.preventDefault();cropZoom(crop.z*Math.exp(-e.deltaY*0.0015));},{passive:false});
+  cv.addEventListener('keydown',e=>{
+    let h=true;
+    if(e.key==='ArrowLeft')crop.ox-=8;else if(e.key==='ArrowRight')crop.ox+=8;else if(e.key==='ArrowUp')crop.oy-=8;else if(e.key==='ArrowDown')crop.oy+=8;
+    else if(e.key==='+'||e.key==='=')crop.z=Math.min(4,crop.z*1.1);else if(e.key==='-')crop.z=Math.max(1,crop.z/1.1);else h=false;
+    if(h){e.preventDefault();zoom.value=Math.round(crop.z*100);cropClamp();cropDraw();}
+  });
+  zoom.addEventListener('input',()=>cropZoom(zoom.value/100));
+}
+function cropLoad(f){
+  const err=$('crop-err');if(!err)return;err.textContent='';
+  if(!/^image\/(png|jpe?g|webp|gif)$/i.test(f.type)){err.textContent='Please choose a PNG, JPG, WEBP or GIF image.';return;}
+  if(f.size>25*1024*1024){err.textContent='That image is too large (25 MB max).';return;}
+  cropFree();
+  const url=URL.createObjectURL(f),img=new Image();
+  img.onload=()=>{
+    if(!$('crop-work')){URL.revokeObjectURL(url);return;}                     // dialog was closed
+    if(img.naturalWidth<64||img.naturalHeight<64){URL.revokeObjectURL(url);$('crop-err').textContent='That image is too small. Use one that is at least 64 × 64 pixels.';return;}
+    crop.img=img;crop.url=url;crop.w=img.naturalWidth;crop.h=img.naturalHeight;
+    $('crop-drop').hidden=true;$('crop-work').hidden=false;
+    cropLayout();$('crop-cv').focus({preventScroll:true});
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);const e=$('crop-err');if(e)e.textContent="That file couldn't be read as an image.";};
+  img.src=url;
+}
+function cropLayout(){
+  const st=$('crop-stage'),cv=$('crop-cv');
+  const side=Math.min(320,Math.round(st.getBoundingClientRect().width)||320);
+  crop.S=side;crop.C=Math.max(160,side-40);crop.dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=cv.height=Math.round(side*crop.dpr);
+  crop.min=Math.max(crop.C/crop.w,crop.C/crop.h);crop.z=1;crop.ox=0;crop.oy=0;
+  $('crop-zoom').value=100;cropDraw();
+}
+function cropPaint(ctx,out,k){
+  const sc=crop.min*crop.z,dw=crop.w*sc*k,dh=crop.h*sc*k;
+  ctx.drawImage(crop.img,out/2+crop.ox*k-dw/2,out/2+crop.oy*k-dh/2,dw,dh);
+}
+function cropClamp(){
+  const sc=crop.min*crop.z,mx=Math.max(0,(crop.w*sc-crop.C)/2),my=Math.max(0,(crop.h*sc-crop.C)/2);
+  crop.ox=Math.min(mx,Math.max(-mx,crop.ox));crop.oy=Math.min(my,Math.max(-my,crop.oy));
+}
+function cropZoom(z){crop.z=Math.min(4,Math.max(1,z));const r=$('crop-zoom');if(r)r.value=Math.round(crop.z*100);cropClamp();cropDraw();}
+function cropDraw(){
+  const cv=$('crop-cv');if(!cv||!crop.img)return;
+  const S=crop.S,C=crop.C,ctx=cv.getContext('2d');
+  ctx.setTransform(crop.dpr,0,0,crop.dpr,0,0);ctx.imageSmoothingQuality='high';
+  ctx.fillStyle='#222';ctx.fillRect(0,0,S,S);cropPaint(ctx,S,1);
+  ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.rect(0,0,S,S);ctx.arc(S/2,S/2,C/2,0,Math.PI*2,true);ctx.fill('evenodd');
+  ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(S/2,S/2,C/2,0,Math.PI*2);ctx.stroke();
+  [['crop-p1',64],['crop-p2',32]].forEach(a=>{
+    const p=$(a[0]);if(!p)return;const n=a[1],c=p.getContext('2d');
+    c.clearRect(0,0,n,n);c.save();c.beginPath();c.arc(n/2,n/2,n/2,0,Math.PI*2);c.clip();c.imageSmoothingQuality='high';cropPaint(c,n,n/C);c.restore();
+  });
+}
+const clerkMsg=e=>(e&&e.errors&&e.errors[0]&&(e.errors[0].longMessage||e.errors[0].message))||(e&&e.message)||'Something went wrong.';
+async function cropFinish(promiseFn,okMsg){
+  const btn=$('crop-save'),err=$('crop-err');
+  crop.saving=true;if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    await promiseFn();
+    try{await AUTH.cu.reload();}catch(e){}
+    user=mapUser(AUTH.cu);updateUserUI();closeDialog();toast(okMsg,'🖼️');
+  }catch(e){
+    console.warn('profile picture update failed',e);
+    crop.saving=false;if(btn){btn.disabled=false;btn.textContent='Save';}
+    if(err)err.textContent=clerkMsg(e);
+  }
+}
+async function cropSave(){
+  if(crop.saving||!crop.img||!AUTH.cu)return;
+  const out=document.createElement('canvas');out.width=out.height=512;
+  const c=out.getContext('2d');c.imageSmoothingQuality='high';c.fillStyle='#fff';c.fillRect(0,0,512,512);cropPaint(c,512,512/crop.C);
+  const blob=await new Promise(r=>out.toBlob(r,'image/jpeg',0.92));
+  if(!blob){$('crop-err').textContent="Couldn't prepare that image. Try a different photo.";return;}
+  const file=new File([blob],'profile.jpg',{type:'image/jpeg'});
+  cropFinish(()=>AUTH.cu.setProfileImage({file}),'Profile picture updated');
+}
+function cropRemove(){if(AUTH.cu&&!crop.saving)cropFinish(()=>AUTH.cu.setProfileImage({file:null}),'Profile picture removed');}
 
 /* ================= SETTINGS ================= */
 const SETTINGS=[['Home feed',[['home','Show home feed','Load videos on the home page'],['personalise','Personalised feed','Mix in channels you watch and subscribe to']]],['Playback',[['autonext','Autoplay next video','Play the next video when one ends'],['autoplay','Hover previews','Play a muted preview when hovering a thumbnail']]],['Appearance',[['dark','Dark theme','Use the dark colour theme'],['compact','Compact guide','Collapse the left menu by default']]],['Privacy',[['saveHist','Save watch history','Remember videos you watch']]]];
@@ -1606,9 +1988,27 @@ const actions={
   copy(t){copyText(t.dataset.v);},
   'paste-go'(){pasteGo();},
   async 'paste-clip'(){try{const tx=await navigator.clipboard.readText();$('paste-inp').value=tx;pasteGo();}catch(e){toast('Press Ctrl+V to paste into the box','ℹ️');$('paste-inp').focus();}},
-  'pf-in'(){profileSave(true);},'pf-save'(){profileSave(false);},
-  'pf-out'(){user=null;LS.set('yt_user',null);updateUserUI();closeDialog();toast('Signed out','👋');},
-  'clear-all'(){if(confirm('Clear all history, subscriptions, playlists and settings?')){try{localStorage.clear();}catch(e){}location.reload();}},
+  'acct-avatar'(){closeDialog();avatarDialog();},
+  'acct-manage'(){
+    const C=AUTH.clerk;closeDialog();
+    try{if(C&&typeof C.openUserProfile==='function')C.openUserProfile();else if(C&&typeof C.redirectToUserProfile==='function')C.redirectToUserProfile();else toast('Account settings are not available','⚠️');}
+    catch(e){toast("Couldn't open account settings",'⚠️');}
+  },
+  async 'acct-out'(){
+    closeDialog();clearTimeout(cloud.t);cloud.t=null;
+    try{await pushNow();}catch(e){}
+    try{await AUTH.clerk.signOut();}catch(e){toast("Couldn't sign out",'⚠️');}
+  },
+  'crop-pick'(){const f=$('crop-file');if(f)f.click();},
+  'crop-save'(){cropSave();},
+  'crop-remove'(){cropRemove();},
+  async 'clear-all'(){
+    const signed=!!AUTH.cu;
+    if(!confirm(signed?'Clear all history, subscriptions, playlists and settings? This also erases the copy saved in your account.':'Clear all history, subscriptions, playlists and settings?'))return;
+    if(signed){try{await writeMeta(AUTH.cu,JSON.stringify({v:1,c:'',s:'',h:'',w:'',l:'',r:'',p:[],q:'',x:''}));}catch(e){toast("Couldn't clear the copy in your account",'⚠️');return;}}
+    try{Object.keys(localStorage).filter(k=>k.indexOf('yt_')===0).forEach(k=>localStorage.removeItem(k));}catch(e){}
+    location.reload();
+  },
   'sh-prev'(){shGo(-1);},'sh-next'(){shGo(1);},
   'sh-toggle'(){sh.paused=!sh.paused;shCmd(sh.paused?'pauseVideo':'playVideo');},
   'sh-mute'(t){sh.muted=!sh.muted;shCmd(sh.muted?'mute':'unMute');t.innerHTML=ic(sh.muted?'mute':'vol');},
@@ -1655,6 +2055,7 @@ document.addEventListener('keydown',e=>{
     let ch=false;subs.forEach(s=>{const u=cAvatar(s.id);if(u&&s.avatar!==u){s.avatar=u;ch=true;}});if(ch)saveSubs();renderSidebar();
   }).catch(()=>{});
   render();
+  initAuth();
 })();
 })();
 </script>
